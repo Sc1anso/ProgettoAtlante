@@ -1,0 +1,49 @@
+# Runtime data and generated reconstruction outputs
+data/
+outputs/
+reconstructed_runs/
+jobs/
+RaDe-GS/output/
+SuGaR/output/
+SuGaR/output_models/
+
+# Python, frontend and test caches
+**/__pycache__/
+**/*.py[cod]
+**/build/
+**/node_modules/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.cache/
+**/.venv/
+**/venv/
+
+# Native/CUDA/CMake products: rebuild on the target host
+**/CMakeCache.txt
+**/CMakeFiles/
+**/_deps/
+**/subbuild/
+**/cmake_install.cmake
+**/*.o
+**/*.so
+**/*.a
+**/*.dll
+**/*.dylib
+**/*.exe
+
+# Local configuration and generated archives
+*.tar.gz
+*.zip
+.env
+.env.*
+!**/.env.example
+*.tar.gz
+*.zip
+
+# Editors and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

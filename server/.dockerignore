@@ -1,0 +1,7 @@
+data/
+outputs/
+reconstructed_runs/
+**/__pycache__/
+**/.git/
+**/build/
+**/node_modules/

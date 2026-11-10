@@ -1,0 +1,8 @@
+{
+    https_port 8443
+}
+
+{$PAVAROTTI_PUBLIC_HOST} {
+    encode zstd gzip
+    reverse_proxy api:8084
+}

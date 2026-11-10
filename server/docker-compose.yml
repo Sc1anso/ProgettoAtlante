@@ -1,0 +1,112 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    image: pavarotti-runtime:local
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    command: micromamba run -n radegs uvicorn app.api:app --host 0.0.0.0 --port 8084
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      JOB_ROOT: /jobs
+    volumes:
+      - job-data:/jobs
+    ports:
+      - "8084:8084"
+    depends_on: [redis]
+    restart: unless-stopped
+
+  worker-v100-0:
+    image: pavarotti-runtime:local
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    command: /usr/local/bin/worker-entrypoint
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      JOB_ROOT: /jobs
+      NVIDIA_VISIBLE_DEVICES: "0"
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics
+      DISPLAY: ":99"
+      QT_QPA_PLATFORM: xcb
+      U2NET_HOME: /opt/rembg
+    volumes:
+      - job-data:/jobs
+      - rembg-models:/opt/rembg
+    depends_on: [redis]
+    gpus:
+      - driver: nvidia
+        count: all
+        capabilities: [gpu]
+    restart: unless-stopped
+
+  worker-v100-1:
+    profiles: ["dual-gpu"]
+    image: pavarotti-runtime:local
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    command: /usr/local/bin/worker-entrypoint
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      JOB_ROOT: /jobs
+      NVIDIA_VISIBLE_DEVICES: "1"
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics
+      DISPLAY: ":99"
+      QT_QPA_PLATFORM: xcb
+      U2NET_HOME: /opt/rembg
+    volumes:
+      - job-data:/jobs
+      - rembg-models:/opt/rembg
+    depends_on: [redis]
+    gpus:
+      - driver: nvidia
+        count: all
+        capabilities: [gpu]
+    restart: unless-stopped
+
+  https-proxy:
+    profiles: ["https"]
+    image: caddy:2-alpine
+    environment:
+      PAVAROTTI_PUBLIC_HOST: ${PAVAROTTI_PUBLIC_HOST:-}
+    volumes:
+      - ./https/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    ports:
+      - "80:80"
+      - "8443:8443"
+    depends_on: [api]
+    restart: unless-stopped
+
+  monitor:
+    profiles: ["monitor"]
+    build:
+      context: ..
+      dockerfile: server/monitor/Dockerfile
+    environment:
+      JOB_ROOT: /jobs
+      MONITOR_GPU: "0"
+      MONITOR_ITERATION: "30000"
+      NVIDIA_VISIBLE_DEVICES: "0"
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics
+    volumes:
+      # The monitor never alters uploads or reconstruction results.
+      - job-data:/jobs:ro
+    ports:
+      - "50001:6080"
+    gpus:
+      - driver: nvidia
+        count: all
+        capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  job-data:
+  rembg-models:
+  caddy-data:
+  caddy-config:

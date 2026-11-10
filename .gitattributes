@@ -1,0 +1,2 @@
+# GitHub regular file limit: keep the bundled demo video in Git LFS.
+server/samples/pavarotti-demo.mp4 filter=lfs diff=lfs merge=lfs -text

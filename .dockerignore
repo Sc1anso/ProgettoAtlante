@@ -1,0 +1,30 @@
+# User/runtime data and local secrets
+data/
+outputs/
+reconstructed_runs/
+jobs/
+**/.env
+**/.env.*
+**/.git/
+
+# Build/cache products (native extensions are compiled in the image)
+**/__pycache__/
+**/*.py[cod]
+**/*.o
+**/*.so
+**/*.a
+**/CMakeCache.txt
+**/CMakeFiles/
+**/_deps/
+**/subbuild/
+**/cmake_install.cmake
+**/build/
+**/node_modules/
+
+# Project-generated outputs not needed as image build inputs
+RaDe-GS/output/
+RaDe-GS/SIBR_viewers/
+Gaussian-Splatting-Monitor/SIBR_viewers/install/
+SuGaR/gaussian_splatting/SIBR_viewers/
+SuGaR/output/
+SuGaR/output_models/

@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Progetto ATLANTE</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    #compare-viewer .compare-label{position:absolute;z-index:5;top:12px;padding:4px 8px;border:1px solid #ffffff22;border-radius:5px;background:#0a0e19cc;color:#fff;font-size:.74rem;font-weight:700;pointer-events:none}
+    #compare-viewer .before-label{left:12px}
+    #compare-viewer .after-label{right:12px}
+    .phone-upload-content{display:flex;align-items:center;gap:24px}.phone-upload-content img{flex:none;border:8px solid #fff;border-radius:10px;background:#fff}.phone-upload-content>div{display:grid;gap:12px;flex:1;min-width:0}.phone-upload-content .actions{align-items:center}@media(max-width:640px){.phone-upload-content{align-items:stretch;flex-direction:column}.phone-upload-content img{align-self:center}}
+    .result-toolbar,.history-actions{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}.action-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border:1px solid #314266;border-radius:10px;background:#0d1528}.action-caption{width:100%;color:#b49bff;font-size:.68rem;font-weight:750;letter-spacing:.12em;text-transform:uppercase}.danger{border-color:#91475a;background:#40202c;color:#ffe6eb}.danger:hover:not(:disabled){border-color:#ef7f99;background:#64283a}.history-item .history-actions{align-items:stretch}.history-item .action-group{padding:8px}.history-item .action-group .action-caption{display:none}@media(max-width:640px){.result-toolbar .action-group,.history-item .action-group{width:100%}.history-item .action-group>*{flex:1}}
+    .active-job-list{display:grid;gap:12px}.active-job{padding:16px;border:1px solid #3f4f82;border-left:4px solid #a38aff;border-radius:12px;background:#0c1428}.active-job-header,.active-job-progress{display:flex;align-items:center;justify-content:space-between;gap:12px}.active-job-header strong{font-size:1rem}.active-job-header span{color:#b9adff;font-size:.86rem;font-weight:700}.active-job-meta,.active-job-message{margin:7px 0;color:#aebbd5;font-size:.84rem;overflow-wrap:anywhere}.active-job-message{min-height:22px;color:#dbe3f7}.active-job progress{margin-top:9px}@media(max-width:640px){.active-job-header{align-items:start;flex-direction:column;gap:2px}}
+    main{width:min(1440px,calc(100% - 40px))}
+    .workspace{display:grid;grid-template-columns:minmax(0,.86fr) minmax(420px,1.14fr);gap:18px;align-items:start}.workspace-left,.workspace-right{display:grid;gap:16px;min-width:0}.workspace .card{margin-top:0}.workspace-right{position:sticky;top:18px}.viewer-placeholder{display:grid;min-height:500px;place-items:center;text-align:center}.viewer-placeholder>div{max-width:360px}.phone-upload-dialog{position:relative;width:min(680px,calc(100% - 32px));padding:0;border:1px solid #5b5aaf;border-radius:16px;background:#141c31;color:#f3f6ff;box-shadow:0 24px 80px #000a}.phone-upload-dialog::backdrop{background:#030613bb;backdrop-filter:blur(4px)}.phone-upload-dialog .phone-upload{margin:0;border:0;box-shadow:none}.dialog-close{position:absolute;z-index:2;right:12px;top:12px;width:34px;height:34px;border-radius:50%;font-size:1.4rem;line-height:1}.acquisition-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.acquisition-actions .primary{flex:1 1 240px}@media(max-width:980px){main{width:min(960px,calc(100% - 28px))}.workspace{grid-template-columns:1fr}.workspace-right{position:static}.viewer-placeholder{min-height:240px}}@media(max-width:640px){.acquisition-actions>*{width:100%}}
+    .workspace-right>.card[hidden]{display:none!important}.viewer-header-actions{display:flex;align-items:center;gap:8px}.viewer-header-actions button:not(.icon-button){min-height:36px;padding:7px 11px;font-size:.84rem}.page-viewer{position:fixed!important;z-index:40;inset:16px;width:auto!important;max-width:none!important;max-height:calc(100vh - 32px);margin:0!important;overflow:auto;background:#141c31}.page-viewer #viewer,.page-viewer #compare-viewer{height:calc(100vh - 250px);min-height:500px}.phone-upload-dialog .phone-upload{padding:30px}.phone-upload-dialog .section-heading{padding-right:42px}.phone-upload-dialog .phone-upload-content{align-items:center}.phone-upload-dialog .phone-upload-content .actions{margin-top:2px}.phone-upload-dialog .phone-upload-content .note{line-height:1.55}@media(max-width:640px){.page-viewer{inset:8px;max-height:calc(100vh - 16px)}.page-viewer #viewer,.page-viewer #compare-viewer{height:calc(100vh - 230px);min-height:360px}.phone-upload-dialog .phone-upload{padding:24px 18px}.viewer-header-actions button:not(.icon-button){padding:7px 9px}}
+    .page-viewer{padding:0!important;overflow:hidden!important}.page-viewer>.section-heading{position:absolute;z-index:3;top:12px;right:12px;margin:0;padding:0}.page-viewer>.section-heading>div:first-child,.page-viewer .result-toolbar,.page-viewer #viewer-note,.page-viewer .viewer-help,.page-viewer .comparison-title{display:none!important}.page-viewer #viewer,.page-viewer #compare-viewer{width:100%;height:100%;min-height:0;border:0;border-radius:16px}.page-viewer .viewer-header-actions{padding:8px;border:1px solid #3b4d76;border-radius:12px;background:#10182bea;box-shadow:0 8px 24px #0008}@media(max-width:640px){.page-viewer>.section-heading{top:8px;right:8px}}
+    .workspace-right>.card{min-width:0}.workspace-right canvas{display:block;max-width:100%;min-width:0}
+    #compare-viewer .compare-pane.before{z-index:2;left:0;right:auto;width:50%;border-right:3px solid #f4f3ff;box-sizing:border-box}#compare-viewer .compare-pane.after{z-index:1;left:50%;right:0;width:50%;border:0}#compare-viewer .compare-pane.after>div{width:100%;max-width:100%}
+  </style>
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <div class="brand-mark" aria-hidden="true">ATL</div>
+      <div>
+        <p class="eyebrow">RICOSTRUZIONE VOLUMETRICA</p>
+        <h1>Progetto ATLANTE</h1>
+        <p class="hero-copy">Trasforma una ripresa del capo in una mesh 3D pronta da esplorare e scaricare.</p>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <div class="workspace-left">
+    <section class="card acquisition">
+      <div class="section-heading">
+        <div><p class="step">01</p><h2>Nuova ricostruzione</h2></div>
+        <p class="note">Soggetto fermo, luce uniforme e ripresa con buona sovrapposizione.</p>
+      </div>
+      <form id="upload">
+        <label class="field-label">Tipo di acquisizione
+          <select id="input-mode">
+            <option value="rgb">Video RGB</option>
+            <option value="zed" hidden>Pacchetto ZED con profondità</option>
+            <option value="colmap">Dataset COLMAP già preparato</option>
+          </select>
+        </label>
+        <label class="field-label">Qualità della ricostruzione
+          <select id="reconstruction-quality">
+            <option value="fast">Rapida — anteprima, meno dettaglio</option>
+            <option value="balanced" selected>Bilanciata — consigliata</option>
+            <option value="high">Alta — più dettagliata, più lenta</option>
+            <option value="very_high">Molto alta — 4 FPS, massima qualità</option>
+          </select>
+        </label>
+        <input id="video" type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" required>
+        <input id="zed" type="file" accept=".zip,application/zip" hidden>
+        <input id="colmap" type="file" accept=".zip,application/zip" hidden>
+        <p id="capture-help" class="note">Video MP4, MOV, MKV o WebM. Il profilo agisce su frame, training e densità della mesh.</p>
+        <div class="acquisition-actions">
+          <button class="primary" type="submit">Avvia ricostruzione <span aria-hidden="true">→</span></button>
+          <button id="open-mobile-upload-dialog" type="button">Carica da telefono · QR</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card direct-zed" hidden>
+      <div class="section-heading compact">
+        <div><p class="step">OPZIONALE</p><h2>Cattura diretta ZED</h2></div>
+        <p class="note">Richiede il Pavarotti ZED Capture Agent su questo PC.</p>
+      </div>
+      <div class="inline-controls">
+        <label class="field-label">Durata (secondi) <input id="zed-duration" type="number" min="10" max="600" value="60"></label>
+        <button id="capture-zed" type="button">Cattura da ZED camera</button>
+      </div>
+    </section>
+
+    <section id="job" class="card job-card" hidden>
+      <div id="legacy-job-status" hidden>
+        <div class="section-heading compact">
+          <div><p class="step">ELABORAZIONE</p><h2>Ricostruzione in corso</h2></div>
+          <strong id="percent">0%</strong>
+        </div>
+        <p id="message" class="job-message"></p>
+        <progress id="progress" max="100" value="0"></progress>
+      </div>
+      <div class="section-heading compact"><div><p class="step">ELABORAZIONI</p><h2>Ricostruzioni in corso</h2></div></div>
+      <div id="active-job-list" class="active-job-list"></div>
+    </section>
+
+            <section class="card history">
+      <div class="section-heading compact">
+        <div><p class="step">ARCHIVIO</p><h2>Mesh 3D create</h2></div>
+        <button id="refresh-history" type="button">Aggiorna</button>
+      </div>
+      <div id="history-list" class="history-list"><p class="note">Caricamento mesh…</p></div>
+    </section>
+      </div>
+      <aside class="workspace-right">
+        <section id="viewer-placeholder" class="card viewer-placeholder">
+          <div><p class="step">VIEWER 3D</p><h2>Seleziona una mesh</h2><p class="note">Apri una ricostruzione dallo storico per esplorarla qui, senza perdere di vista le elaborazioni.</p></div>
+        </section>
+    <section id="result" class="card result-card" hidden>
+      <div class="section-heading compact">
+        <div><p class="step">RISULTATO</p><h2 id="viewer-title">Mesh 3D</h2></div>
+        <div class="viewer-header-actions"><button id="expand-viewer" type="button" aria-label="Espandi viewer nella pagina">Espandi</button><button id="close-viewer" class="icon-button" type="button" aria-label="Chiudi visualizzatore" title="Chiudi visualizzatore">×</button></div>
+      </div>
+      <div class="result-toolbar">
+        <div class="action-group">
+          <span class="action-caption">Visualizzazione</span>
+          <label class="download-quality">Qualità viewer
+            <select id="viewer-quality">
+              <option value="low">Rapido</option>
+              <option value="medium" selected>Bilanciato</option>
+              <option value="high">Dettagliato</option>
+            </select>
+          </label>
+        </div>
+        <div class="action-group">
+          <span class="action-caption">Download</span>
+          <a id="download">PLY originale</a>
+          <label class="download-quality">Qualità GLB
+            <select id="glb-quality">
+              <option value="low">Bassa</option>
+              <option value="medium" selected>Media</option>
+              <option value="high">Alta (piena)</option>
+            </select>
+          </label>
+          <button id="download-glb" type="button">Scarica GLB</button>
+        </div>
+      </div>
+      <p id="viewer-note" class="note">Il viewer usa una copia alleggerita; il PLY scaricato resta alla qualità originale.</p>
+      <p class="viewer-help">Trascina per ruotare · rotella per zoom · tasto destro per spostare</p>
+      <div id="viewer"></div>
+    </section>
+
+    <section id="comparison" class="card comparison-card" hidden>
+      <div class="section-heading compact">
+        <div><p class="step">CONFRONTO</p><h2>Prima e dopo</h2></div>
+        <div class="viewer-header-actions"><button id="expand-comparison" type="button" aria-label="Espandi confronto nella pagina">Espandi</button><button id="close-comparison" class="icon-button" type="button" aria-label="Chiudi confronto" title="Chiudi confronto">×</button></div>
+      </div>
+      <div class="comparison-title">
+        <p class="note">Sposta il separatore per confrontare mesh originale e chiusura dei buchi.</p>
+        <label>Prima <input id="compare-slider" type="range" min="10" max="90" value="50" aria-label="Posizione separatore prima e dopo"> Dopo</label>
+      </div>
+      <div id="compare-viewer">
+        <div class="compare-pane before"><div id="before-viewer"></div></div>
+        <div id="compare-divider" aria-hidden="true"></div>
+        <div class="compare-pane after"><div id="after-viewer"></div></div>
+        <span class="compare-label before-label">Originale</span>
+        <span class="compare-label after-label">Dopo chiusura buchi</span>
+      </div>
+    </section>
+
+
+      </aside>
+    </div>
+  </main>
+    <dialog id="phone-upload-dialog" class="phone-upload-dialog">
+      <button id="close-mobile-upload" class="dialog-close" type="button" aria-label="Chiudi caricamento da telefono" title="Chiudi">×</button>
+      <section class="phone-upload">
+      <div class="section-heading compact">
+        <div><p class="step">OPZIONALE</p><h2>Carica da telefono</h2></div>
+        <p class="note">Scansiona il QR per aprire l’upload mobile dalla galleria.</p>
+      </div>
+      <div class="phone-upload-content">
+        <img id="mobile-qr" width="180" height="180" alt="QR code per aprire l’upload da telefono">
+        <div>
+          <input id="mobile-upload-url" type="hidden">
+          <div class="actions"><button id="refresh-mobile-qr" type="button">Aggiorna QR</button><a id="open-mobile-upload" target="_blank" rel="noopener">Apri pagina mobile</a></div>
+          <p id="mobile-qr-note" class="note">Il telefono deve poter raggiungere questo server sulla stessa rete oppure tramite HTTPS pubblico.</p>
+        </div>
+      </div>
+      </section>
+    </dialog>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
