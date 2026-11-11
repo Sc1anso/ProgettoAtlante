@@ -20,11 +20,11 @@ fi
 docker compose "${compose_profiles[@]}" up -d --no-build
 
 if [[ "${PAVAROTTI_ENABLE_HTTPS:-0}" == "1" ]]; then
-  url="https://${PAVAROTTI_PUBLIC_HOST}"
+  url="https://${PAVAROTTI_PUBLIC_HOST}:8443"
 elif grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
   url='http://localhost:8084'
 else
   ip="$(hostname -I | awk '{print $1}')"
   url="http://${ip}:8084"
 fi
-echo "Pavarotti 3D is running: $url"
+echo "Project ATLANTE is running: $url"

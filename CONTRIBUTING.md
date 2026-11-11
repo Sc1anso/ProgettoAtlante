@@ -1,16 +1,16 @@
-# Contribuire a Progetto ATLANTE
+# Contributing to Project ATLANTE
 
-Prima di proporre una modifica, leggi il [README](README.md), la [guida operativa](server/DEPLOYMENT_AND_USAGE.md) e le [note sulle licenze](THIRD_PARTY_NOTICES.md). Il repository integra componenti con licenze indipendenti: non cambiare o rimuovere i relativi avvisi e non aggiungere una licenza globale senza una verifica dei diritti.
+Before proposing a change, read the [project README](README.md), the [deployment guide](server/DEPLOYMENT_AND_USAGE.md), and [third-party license notes](THIRD_PARTY_NOTICES.md). This repository combines components with independent licenses; preserve upstream notices and do not add a project-wide license without a rights review.
 
-## Regole per le modifiche
+## Change guidelines
 
-- Non aggiungere dataset storici, video di utenti, output di job, checkpoint, credenziali o file `server/.env`.
-- Mantieni fuori dal versionamento build CUDA/CMake, cache, volumi e output. Per file binari grandi da distribuire, verifica prima i diritti e usa Git LFS solo se necessario.
-- Mantieni i flussi RGB e COLMAP coerenti con le guide; documenta esplicitamente cambiamenti a modalità, parametri, porte o persistenza.
-- Evita di esporre API/noVNC senza autenticazione. Non inserire indirizzi IP, token o hostname privati nella documentazione.
+- Do not commit historical datasets, user videos, reconstruction outputs, checkpoints, credentials, or `server/.env`.
+- Keep CUDA/CMake build products, caches, Docker volumes, and generated outputs out of version control. Check redistribution rights before adding large binary assets; use Git LFS only when needed.
+- Keep the RGB and prepared-COLMAP flows aligned with the documentation. Document changes to modes, parameters, ports, or persistence.
+- Do not expose the API or noVNC without authentication. Never add private IP addresses, tokens, or internal hostnames to documentation.
 
-## Verifiche locali
+## Local checks
 
-Per modifiche ai container controlla la sintassi degli script (`bash -n ...`) e la configurazione Compose (`cd server && docker compose config --quiet`). I test automatici specifici vanno eseguiti quando sono disponibili le dipendenze previste dal container. Non lanciare un training reale come controllo ordinario: richiede GPU, tempo e spazio di storage.
+For container changes, check shell syntax (`bash -n ...`) and Compose configuration (`cd server && docker compose config --quiet`). Run the relevant unit tests when their dependencies are available. A real training run is not a routine test: it requires a GPU, significant time, and storage.
 
-Le build CUDA possono essere lunghe e richiedere molta memoria. Specifica nel contributo i comandi di verifica effettivamente eseguiti e quelli non eseguiti.
+CUDA builds can be lengthy and memory-intensive. Report which checks you ran and which you did not run.

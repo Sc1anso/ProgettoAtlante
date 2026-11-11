@@ -1,83 +1,124 @@
-# Installazione, utilizzo e gestione — Progetto ATLANTE
+# Deployment, usage, and operations
 
-Questa guida copre Linux nativo e WSL2, installazione, modalità disponibili, operazioni e diagnostica. Per l'introduzione al progetto vedere il [README principale](../README.md).
+This guide covers native Linux and WSL2 installation, the current user-facing modes, optional service profiles, and troubleshooting. See the [project README](../README.md) for an overview.
 
-## 1. Requisiti
+## 1. Requirements
 
-- Host x86_64 Linux (CentOS/RHEL/Rocky/Alma 9, Ubuntu o Debian) oppure WSL2.
-- GPU NVIDIA, driver compatibile con CUDA 12.1 e NVIDIA Container Toolkit; build di riferimento Tesla V100/compute capability 7.0.
-- Minimo pratico: 8 core CPU, 32 GB RAM, GPU con 16 GB VRAM e 100 GB SSD liberi. Consigliati 16+ core, 64 GB RAM, più VRAM e 250 GB+ NVMe per job pesanti.
-- Docker Engine con Compose v2. In WSL: Docker Desktop in esecuzione, WSL integration e GPU attiva. Tenere il progetto nel filesystem Linux della distro, non in `/mnt/c`.
-- Internet per il primo build/scaricamento dipendenze e per il modello rembg al primo job che ne ha bisogno.
+- x86_64 Linux (CentOS/RHEL/Rocky/AlmaLinux 9, Ubuntu, or Debian) or WSL2.
+- NVIDIA GPU and a host driver compatible with the CUDA 12.1 container; NVIDIA Container Toolkit is required for Docker GPU access. The build target is Tesla V100 / compute capability 7.0.
+- Practical starting point: 8 CPU cores, 32 GB RAM, 16 GB VRAM, and 100 GB of free SSD space. For larger jobs, 16+ cores, 64 GB RAM, more VRAM, and 250 GB+ NVMe are recommended.
+- Docker Engine with Compose v2. On WSL2, Docker Desktop must be running with WSL integration and GPU access enabled. Keep the checkout in the Linux filesystem rather than `/mnt/c`.
+- Internet access for the first image build and dependency downloads; rembg may download its model during the first relevant job.
 
-Sono valori indicativi: il consumo dipende da durata/risoluzione del video, FPS del preset e dimensione della mesh.
+These are planning figures, not hard guarantees. Video resolution/duration, preset, frame count, and mesh size affect memory, runtime, and disk usage.
 
-## 2. Installazione e avvio
+## 2. Install and start
 
-Dalla radice del progetto:
+From the repository root:
 
 ```bash
 bash server/setup-service.sh
 ```
 
-Lo script configura prerequisiti dove supportato, verifica l'accesso GPU da Docker, costruisce e avvia Redis, API/UI e un worker GPU. Apri `http://localhost:8084` da Windows/WSL oppure `http://IP-DEL-SERVER:8084` dalla LAN.
+The script installs prerequisites where supported, checks GPU access from Docker, builds the application image, and starts Redis, the API/web UI, and one GPU worker. Open `http://localhost:8084` from Windows/WSL2, or `http://SERVER-IP:8084` from the LAN.
 
-Per host a due GPU si può abilitare un secondo worker:
+For a two-GPU host, enable the second worker during setup:
 
 ```bash
 PAVAROTTI_ENABLE_SECOND_GPU=1 bash server/setup-service.sh
 ```
 
-Per l'uso quotidiano, dalla radice:
+For everyday use:
 
 ```bash
 bash server/start-service.sh
 bash server/stop-service.sh
 ```
 
-Lo start non ricostruisce le immagini. Lo stop conserva i volumi. Evita `docker compose down -v` se vuoi mantenere job e mesh.
+Start reuses existing images. Stop preserves named volumes. Avoid `docker compose down -v` unless you intend to delete stored jobs and results.
 
 ### WSL2
 
-Installa il driver NVIDIA WSL su Windows e Docker Desktop con WSL integration abilitata. Nella distro verifica `nvidia-smi`, `docker compose version` e `docker run --rm --gpus all nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia-smi`. Poi lancia il setup come sopra. Non installare un driver Linux NVIDIA separato dentro WSL.
-
-### HTTPS opzionale
-
-Il profilo Caddy termina TLS sulla porta 8443 e richiede DNS pubblico e challenge ACME raggiungibile dalla porta TCP 80. La porta pubblica 80 deve essere inoltrata al container; aprire/inoltrare anche 8443 per raggiungere la UI HTTPS. La configurazione inclusa non offre DNS challenge: se la porta 80 non è accessibile, l'emissione automatica del certificato non funzionerà.
+Use WSL2, install the NVIDIA Windows driver with WSL support, and enable the distribution in Docker Desktop's WSL Integration settings. Do not install a separate Linux NVIDIA driver inside the WSL distribution. Before setup, verify `nvidia-smi`, `docker compose version`, and GPU access with:
 
 ```bash
-PAVAROTTI_ENABLE_HTTPS=1 PAVAROTTI_PUBLIC_HOST=atlante.example.org bash server/setup-service.sh
+docker run --rm --gpus all nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia-smi
 ```
 
-Dopo il setup apri `https://atlante.example.org:8443`. Il QR usa l'origine HTTPS quando la UI viene aperta tramite tale indirizzo. Non sono presenti login o autenticazione: non pubblicare il servizio direttamente su Internet; predisporre reverse proxy autenticato, limiti upload e policy di conservazione.
+Keep the source tree inside the WSL Linux filesystem for better build and file-I/O performance.
 
-### Gaussian Monitor opzionale
+## 3. Optional profiles and configuration
 
-Il Monitor usa GPU 0 e un container desktop noVNC separato. Non viene costruito dal setup predefinito:
+### Second GPU worker
+
+`PAVAROTTI_ENABLE_SECOND_GPU=1` enables Compose profile `dual-gpu`, which adds `worker-v100-1`. It requires a second visible NVIDIA GPU. Set the variable both for setup and for later starts:
+
+```bash
+PAVAROTTI_ENABLE_SECOND_GPU=1 bash server/setup-service.sh
+PAVAROTTI_ENABLE_SECOND_GPU=1 bash server/start-service.sh
+```
+
+Each worker processes one GPU job at a time. A job submitted while its worker is busy remains queued.
+
+### Gaussian Splatting Monitor
+
+The optional Monitor is built separately, uses GPU 0, and serves noVNC on TCP port `50001`:
 
 ```bash
 PAVAROTTI_ENABLE_MONITOR=1 bash server/setup-service.sh
 ```
 
-Oppure dalla directory `server`:
+Or, after the main setup, from `server/`:
 
 ```bash
 docker compose --profile monitor build monitor
 docker compose --profile monitor up -d monitor
 ```
 
-Porta `50001` (per esempio `http://IP-DEL-SERVER:50001/vnc.html`). È in sola lettura sul volume dei job, ma può competere per VRAM con il worker GPU 0.
+After `server/stop-service.sh` stops all profiles, restart the Monitor with `docker compose --profile monitor up -d monitor`. It reads job data read-only but can compete with worker 0 for VRAM. noVNC has no project login layer; restrict port 50001 to a trusted network.
 
-## 3. Modalità d'ingresso
+### HTTPS through Caddy
 
-- **Video RGB**: estrazione dei frame in base al preset, filtraggio frame mossi, mascheramento/raffinamento, COLMAP GPU, training RaDe-GS, estrazione mesh e preparazione delle viste web.
-- **Dataset COLMAP già preparato**: ZIP validato ed estratto in un'area isolata del job; salta frame extraction, COLMAP, rembg e DiGS; esegue RaDe-GS ed estrazione mesh direttamente.
+The optional HTTPS profile requires a public DNS hostname pointing to the server. Forward/reach TCP port 80 from the public Internet for ACME HTTP validation, and TCP port 8443 to the service for browser access. The included Caddy configuration does not use DNS challenges; HTTPS certificate issuance fails if port 80 cannot be reached.
 
-Il formato ZIP COLMAP supporta sia le directory del dataset alla radice, sia un'unica directory radice contenitore. Requisiti minimi:
+```bash
+PAVAROTTI_ENABLE_HTTPS=1 PAVAROTTI_PUBLIC_HOST=atlante.example.org bash server/setup-service.sh
+```
+
+Open `https://atlante.example.org:8443`. Pass both variables again when restarting:
+
+```bash
+PAVAROTTI_ENABLE_HTTPS=1 PAVAROTTI_PUBLIC_HOST=atlante.example.org bash server/start-service.sh
+```
+
+`server/.env.example` is a template for Compose interpolation; copying it to `.env` alone does not export variables to the setup/start scripts. HTTPS provides TLS only: this application has no user authentication, upload quotas, or account controls. Do not expose it directly to the public Internet; put an authenticated reverse proxy and appropriate upload/storage policies in front of it.
+
+## 4. Input modes
+
+The current visible UI offers **RGB video** and **Prepared COLMAP dataset**. ZED/DiGS backend routes remain in the source for compatibility, but the ZED selector and direct-capture panel are hidden in the current UI.
+
+### RGB video
+
+Upload an MP4, MOV, MKV, or WebM file. The server extracts frames according to the selected quality profile, filters blurry frames, creates/refines masks, runs GPU COLMAP and RaDe-GS, extracts the mesh, and prepares web-viewer assets.
+
+Current RGB preset parameters:
+
+| UI label | Frame sampling | Training iterations | Notes |
+| --- | ---: | ---: | --- |
+| Fast (`Rapida`) | 1 FPS | 15,000 | Quick check, lower detail |
+| Balanced (`Bilanciata`) | 1.5 FPS | 22,000 | Recommended starting point |
+| High (`Alta`) | 2 FPS | 30,000 | More detail and runtime |
+| Very High (`Molto alta`) | 4 FPS | 45,000 | Highest current preset; needs clean input and more resources |
+
+These settings are implementation defaults and may change between releases. Presets also affect additional pipeline parameters.
+
+### Prepared COLMAP dataset
+
+Upload a ZIP archive. It may contain the dataset folders directly or a single outer scene directory. Minimum structure:
 
 ```text
 dataset.zip
-└── nome-scena/                 # opzionale
+└── scene-name/                 # optional single outer folder
     ├── images/
     │   └── 0001.jpg
     └── sparse/0/
@@ -86,19 +127,21 @@ dataset.zip
         └── points3D.bin
 ```
 
-`images/` deve contenere almeno un PNG/JPG/JPEG. `input/` può essere mantenuta; cartelle ausiliarie come `masks/`, `input_masks/`, `distorted/` o `stereo/` sono opzionali. Sono rifiutati path non sicuri, symlink, duplicati, dataset incompleti e archivi oltre i limiti di sicurezza. Scene `*_densified` prodotte da DiGS sono candidate utili: il flusso COLMAP diretto non esegue una nuova densificazione.
+`images/` must contain at least one PNG/JPG/JPEG. `input/` and optional folders such as `masks/`, `input_masks/`, `distorted/`, or `stereo/` are retained if present. Unsafe paths, absolute paths, symlinks, duplicate paths, incomplete structures, and archives exceeding safety limits are rejected. DiGS scenes with the `_densified` suffix are useful candidates; this direct mode does not run DiGS densification again.
 
-Il flusso ZED/DiGS rimane nel codice backend per compatibilità e per input agent già supportati; non è esposto come selezione ordinaria nell'interfaccia corrente.
+### ZED/DiGS compatibility
 
-## 4. Preset, risultati e persistenza
+The source retains the legacy ZED/DiGS worker route and capture client. The ZED ZIP format has `recording.mp4`, `depth_data.dp`, and `camera_data.dp` at the ZIP root, but the corresponding selector is currently hidden in the web UI. Do not treat it as an enabled user-facing mode without deliberately changing the UI.
 
-I profili RGB sono Rapida, Bilanciata, Alta e Molto alta; aumentando il preset aumentano frame elaborati, iterazioni/qualità della ricostruzione, durata e spazio necessario. Le card di avanzamento sono separate per job. Un worker gestisce un job alla volta; job aggiuntivi attendono la GPU finché il worker non si libera.
+## 5. Presets, results, and persistence
 
-Il file sorgente è `output/recon.ply`. Preset viewer, GLB, gaussian preview e riparazioni conservative sono output derivati. I job sono nel volume `job-data`; i modelli rembg nel volume `rembg-models`. Salvaguardare i volumi e predisporre un backup se i dati hanno valore. `docker compose down` non elimina i volumi; `docker compose down -v` li cancella.
+Each worker processes one job at a time; additional jobs wait for a worker. Completed jobs retain the original `output/recon.ply`. Browser viewer meshes, GLB downloads, Gaussian previews, and conservative repair results are derived assets and do not overwrite the original PLY.
 
-## 5. Comandi operativi
+Docker named volumes: `job-data` stores job inputs/results/logs; `rembg-models` caches segmentation models. Back up important volumes and plan disk retention. `docker compose down` preserves them; `docker compose down -v` deletes them.
 
-Da `server/`:
+## 6. Operations and logs
+
+From `server/`:
 
 ```bash
 docker compose ps
@@ -106,27 +149,33 @@ docker compose logs -f api
 docker compose logs -f worker-v100-0
 docker compose restart
 docker compose up -d
-# Monitor opzionale
-docker compose --profile monitor logs -f monitor
 ```
 
-Per aggiornare codice o immagini, dalla directory `server`: `docker compose build` e poi `docker compose up -d`. La ricreazione di un worker interrompe un task in esecuzione; verifica prima che non ci siano job attivi.
+For the optional Monitor:
 
-## 6. Troubleshooting
+```bash
+docker compose --profile monitor logs -f monitor
+docker compose --profile monitor up -d monitor
+docker compose --profile monitor stop monitor
+```
 
-| Problema | Controllo |
+To rebuild after source changes, use `docker compose build` followed by `docker compose up -d`. Recreating a worker interrupts its active task; check for running jobs first.
+
+## 7. Troubleshooting
+
+| Symptom | Check |
 | --- | --- |
-| UI non raggiungibile | `docker compose ps`, porta 8084 e firewall host. |
-| Nessuna GPU | `nvidia-smi` sull'host e test `docker run --rm --gpus all ... nvidia-smi`; verificare toolkit NVIDIA o WSL integration. |
-| Job in attesa GPU | Controllare worker e job già attivi; è comportamento normale con un job per worker. |
-| Job fallito | `docker compose logs -f worker-v100-0` e `worker.log` nel volume job-data. |
-| COLMAP non ricostruisce | Ripresa con più sovrapposizione, frame nitidi, texture e parallax; evitare soggetto mosso e riflessi. |
-| Mesh con sfondo/rumore | Migliorare ripresa, separazione e maschere; riparazione buchi non rimuove l'ambiente. |
-| HTTPS certificato non emesso | Verificare DNS e raggiungibilità pubblica della porta 80 per ACME, oltre a 8443 per il servizio. |
-| Monitor irraggiungibile | `docker compose --profile monitor ps`, porta 50001 e profilo monitor attivo. |
+| UI is unreachable | Check `docker compose ps`, host firewall, and TCP 8084. |
+| Container cannot see the GPU | Check host `nvidia-smi`, NVIDIA Container Toolkit, or WSL integration; run the GPU test above. |
+| Job is waiting for GPU | A worker handles one job at a time; check active jobs and worker logs. |
+| Job failed | Inspect `docker compose logs -f worker-v100-0` and the job's `worker.log` in `job-data`. |
+| COLMAP reconstruction fails | Use sharp, overlapping views with parallax and texture; keep the subject still and avoid glare. |
+| Room/background appears in the mesh | Improve subject/background separation and mask quality in the input video; hole repair does not remove background geometry. |
+| HTTPS certificate is not issued | Confirm public DNS and external TCP 80 reachability for ACME; TCP 8443 is used for browser access. |
+| Monitor cannot be reached | Confirm Monitor profile/container is running, TCP 50001 is reachable, and the host has enough GPU memory. |
 
-## 7. Riferimenti
+## 8. References
 
-- [Manuale utente](../docs/Manuale_utente_Progetto_ATLANTE.md)
-- [Report tecnico](../docs/Report_tecnico_Progetto_ATLANTE.md)
-- [Note licenze e terze parti](../THIRD_PARTY_NOTICES.md)
+- [User manual](../docs/User_Manual_ATLANTE.md)
+- [Technical report](../docs/Technical_Report_ATLANTE.md)
+- [Third-party license notes](../THIRD_PARTY_NOTICES.md)

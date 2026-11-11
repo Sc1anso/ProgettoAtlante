@@ -1,10 +1,10 @@
-# Server: installazione e avvio
+# Server operations
 
-Per installazione completa, requisiti Linux/WSL, flussi supportati e troubleshooting vedere [DEPLOYMENT_AND_USAGE.md](DEPLOYMENT_AND_USAGE.md). Per una panoramica del repository consultare il [README principale](../README.md).
+For supported platforms, installation, user workflows, configuration options, and troubleshooting, see [DEPLOYMENT_AND_USAGE.md](DEPLOYMENT_AND_USAGE.md). For an overview of the whole project, see the [root README](../README.md).
 
-## Setup e uso quotidiano
+## Setup and daily use
 
-Dalla radice del progetto:
+Run these commands from the repository root:
 
 ```bash
 bash server/setup-service.sh
@@ -12,9 +12,9 @@ bash server/start-service.sh
 bash server/stop-service.sh
 ```
 
-Il setup costruisce le immagini e avvia Redis, API/UI e un worker GPU. Lo start riavvia i container già creati senza rebuild; lo stop preserva i volumi Docker (job, mesh e cache). Non eseguire `docker compose down -v` se si vogliono conservare i risultati.
+Setup builds the images and starts Redis, the API/web UI, and one GPU worker. Start reuses existing images without rebuilding. Stop preserves Docker volumes (jobs, meshes, and caches); do not run `docker compose down -v` if you need the stored results.
 
-Opzioni facoltative:
+Optional setup flags:
 
 ```bash
 PAVAROTTI_ENABLE_SECOND_GPU=1 bash server/setup-service.sh
@@ -22,11 +22,11 @@ PAVAROTTI_ENABLE_MONITOR=1 bash server/setup-service.sh
 PAVAROTTI_ENABLE_HTTPS=1 PAVAROTTI_PUBLIC_HOST=atlante.example.org bash server/setup-service.sh
 ```
 
-La seconda GPU e il monitor richiedono hardware adeguato. HTTPS usa Caddy: la porta 80 pubblica deve essere raggiungibile per il certificato ACME; la UI HTTPS è esposta sulla 8443. Serve un hostname DNS pubblico. Non è configurata autenticazione: non esporre il servizio direttamente su Internet.
+Re-pass the relevant `PAVAROTTI_*` variables when using `start-service.sh`; the scripts do not persist shell options. HTTPS uses Caddy, a public DNS hostname, externally reachable TCP 80 for ACME validation, and TCP 8443 for the HTTPS UI. No application authentication is configured, so do not expose the services directly to the Internet.
 
-## Compose e log
+## Compose and logs
 
-Dalla directory `server`:
+From the `server/` directory:
 
 ```bash
 docker compose ps
@@ -35,4 +35,4 @@ docker compose logs -f worker-v100-0
 docker compose --profile monitor logs -f monitor
 ```
 
-I dati persistenti si trovano nei volumi `job-data` e `rembg-models`. Vedere `DEPLOYMENT_AND_USAGE.md` per i dettagli di retention, backup, HTTPS, formati ZIP e limiti operativi.
+After `stop-service.sh`, restart the optional Monitor with `docker compose --profile monitor up -d monitor` from `server/`. It must have been built at least once. Persistent data lives in the `job-data` and `rembg-models` volumes. See the deployment guide for backups, retention, ZIP formats, and operational limits.

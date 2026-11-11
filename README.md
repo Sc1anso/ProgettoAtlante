@@ -1,51 +1,81 @@
-# Progetto ATLANTE
+# Project ATLANTE
 
-Webapp locale per ricostruire e consultare mesh 3D a partire da video RGB o da scene COLMAP già preparate. Il progetto coordina RaDe-GS, COLMAP, elaborazione delle maschere, estrazione della mesh e viewer nel browser tramite Docker Compose.
+![Platform: Linux and WSL2](https://img.shields.io/badge/platform-Linux%20%7C%20WSL2-4C566A?logo=linux&logoColor=white)
+![Docker Compose v2](https://img.shields.io/badge/Docker%20Compose-v2-2496ED?logo=docker&logoColor=white)
+![CUDA 12.1](https://img.shields.io/badge/CUDA-12.1-76B900?logo=nvidia&logoColor=white)
+![Python 3.9](https://img.shields.io/badge/Python-3.9-3776AB?logo=python&logoColor=white)
+![Git LFS](https://img.shields.io/badge/Git%20LFS-enabled-f64935)
 
-> **Stato e licenze:** questa è una preparazione locale del repository, non è stata effettuata alcuna pubblicazione GitHub. Il codice integra componenti di ricerca con licenze e condizioni proprie, alcune non commerciali. Leggere [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) e ottenere le autorizzazioni necessarie prima di redistribuire o rendere pubblico il repository. Non è stata aggiunta una licenza globale al progetto.
+Project ATLANTE is a self-hosted web application for reconstructing and inspecting 3D meshes from RGB video or an already prepared COLMAP dataset. It orchestrates frame preparation, masking, COLMAP, RaDe-GS training, mesh extraction, and browser-based viewers using Docker Compose.
 
-## Funzionalità
+> **Licensing:** This repository integrates upstream research software with independent license terms, including research/non-commercial restrictions. No blanket license is granted for the combined project. Review [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the original notices before redistribution or use. Keeping this repository private does not replace license compliance.
 
-- Ricostruzione da video RGB e da ZIP di dataset COLMAP esistenti.
-- Preset di elaborazione (Rapida, Bilanciata, Alta, Molto alta) e card di avanzamento per job.
-- Storico delle mesh, viewer mesh e Gaussian, download PLY/GLB e strumenti conservativi per piccoli buchi.
-- Upload da telefono tramite QR; HTTPS è una configurazione opzionale, non attiva per impostazione predefinita.
-- Gaussian Splatting Monitor opzionale, eseguito in un container separato.
+## Features
 
-Il flusso RGB prepara frame e maschere, esegue COLMAP e RaDe-GS, quindi estrae `recon.ply`. Il flusso COLMAP accetta un archivio ZIP con `images/` e `sparse/0/{cameras.bin,images.bin,points3D.bin}` e salta preprocessing e COLMAP. I risultati e i job sono conservati nel volume Docker `job-data`; cache rembg nel volume `rembg-models`.
+- Reconstruct a scene from an RGB video or a prepared COLMAP ZIP archive.
+- Choose among Fast, Balanced, High, and Very High reconstruction presets.
+- Track multiple jobs, browse reconstruction history, and view mesh/Gaussian previews.
+- Download the original PLY or a quality-selected GLB; optionally attempt conservative small-boundary repair.
+- Upload a video from a phone using a QR code.
+- Optionally enable the Gaussian Splatting Monitor in a separate container.
 
-## Requisiti
+The RGB pipeline extracts and filters frames, refines masks, runs COLMAP and RaDe-GS, and writes `output/recon.ply`. The prepared-COLMAP pipeline validates and extracts the dataset, then runs RaDe-GS and mesh extraction without repeating frame extraction, COLMAP, rembg, or DiGS. Jobs and results are stored in the persistent Docker volume `job-data`; rembg models use `rembg-models`.
 
-- Linux x86_64 oppure WSL2; Docker Engine/Compose v2 (o Docker Desktop con integrazione WSL).
-- GPU NVIDIA compatibile, driver host e NVIDIA Container Toolkit; il riferimento di build è CUDA 12.1 / Tesla V100.
-- Consigliati almeno 8 core CPU, 32 GB RAM, 16 GB VRAM e 100 GB di spazio libero; video lunghi e preset elevati richiedono sensibilmente più risorse.
-- Accesso Internet per la prima build e per scaricare dipendenze/modelli. In WSL conservare il checkout nel filesystem Linux, non sotto `/mnt/c`.
+## Requirements
 
-## Avvio rapido
+- x86_64 Linux or WSL2; Docker Engine with Compose v2 (or Docker Desktop with WSL integration).
+- NVIDIA GPU, compatible host driver, and NVIDIA Container Toolkit. The build targets CUDA 12.1 and is validated against Tesla V100 (compute capability 7.0).
+- Recommended starting point: 8 CPU cores, 32 GB RAM, 16 GB VRAM, and 100 GB free SSD space. Long videos and high presets need more resources.
+- Internet access for the first image build and dependency/model downloads. In WSL2, keep the checkout in the Linux filesystem rather than under `/mnt/c`.
 
-Dalla radice del repository:
+These are planning guidelines, not guaranteed capacity limits. Workload size and GPU compatibility vary.
+
+## Quick start
+
+From the repository root:
 
 ```bash
 bash server/setup-service.sh
 ```
 
-La webapp è disponibile su `http://localhost:8084` (WSL) oppure `http://IP-DEL-SERVER:8084` (Linux). Gli script `server/start-service.sh` e `server/stop-service.sh` avviano e fermano i container mantenendo i volumi. Per due GPU: `PAVAROTTI_ENABLE_SECOND_GPU=1 bash server/setup-service.sh`.
+Open `http://localhost:8084` from Windows/WSL2, or `http://SERVER-IP:8084` from the LAN. To restart existing containers without rebuilding, use `bash server/start-service.sh`; to stop them while keeping Docker volumes, use `bash server/stop-service.sh`.
 
-Per avviare l'opzionale Gaussian Monitor durante il setup: `PAVAROTTI_ENABLE_MONITOR=1 bash server/setup-service.sh`.
+## Optional profiles
 
-HTTPS richiede un hostname DNS raggiungibile e l'accesso alla porta pubblica TCP 80 per il certificato ACME; il servizio HTTPS è pubblicato sulla porta 8443. La configurazione attuale non include autenticazione: non esporre direttamente la webapp o noVNC a Internet.
+**Second GPU worker** (requires a second NVIDIA GPU):
 
-## Documentazione
+```bash
+PAVAROTTI_ENABLE_SECOND_GPU=1 bash server/setup-service.sh
+PAVAROTTI_ENABLE_SECOND_GPU=1 bash server/start-service.sh
+```
 
-- [Guida installazione, uso e troubleshooting](server/DEPLOYMENT_AND_USAGE.md)
-- [README operativo del server](server/README.md)
-- [Manuale utente (Markdown)](docs/Manuale_utente_Progetto_ATLANTE.md) · [PDF/DOCX impaginato](docs/Manuale_utente_Progetto_ATLANTE.docx)
-- [Report tecnico (Markdown)](docs/Report_tecnico_Progetto_ATLANTE.md) · [DOCX impaginato](docs/Report_tecnico_Progetto_ATLANTE.docx)
-- [Note sui componenti e sulle licenze](THIRD_PARTY_NOTICES.md)
-- [Linee guida per contribuire](CONTRIBUTING.md)
+**Gaussian Monitor** (separate build, uses GPU 0):
 
-## Repository e file voluminosi
+```bash
+PAVAROTTI_ENABLE_MONITOR=1 bash server/setup-service.sh
+```
 
-Il video demo `server/samples/pavarotti-demo.mp4` è mantenuto per compatibilità con l'endpoint demo, ma supera il limite ordinario di upload GitHub: è configurato per Git LFS. Per un clone completo occorre avere Git LFS installato. I file locali `.env`, dataset, job, output e artefatti compilati sono esclusi dal versionamento.
+After `server/stop-service.sh`, start the already-built Monitor separately from `server/` with `docker compose --profile monitor up -d monitor`. The Monitor is exposed on port `50001` and has no added authentication; keep it on a trusted network.
 
-Prima di pubblicare il repository, confermare i diritti sul video demo e su ogni sorgente upstream; non inserire dati o credenziali locali.
+**HTTPS via Caddy** requires a public DNS hostname and an externally reachable TCP port 80 for ACME validation. The HTTPS endpoint is published on port `8443`; there is no built-in login/authentication. Do not expose the app or noVNC directly to the public Internet.
+
+```bash
+PAVAROTTI_ENABLE_HTTPS=1 PAVAROTTI_PUBLIC_HOST=atlante.example.org bash server/setup-service.sh
+# The same options are needed when restarting the HTTPS profile:
+PAVAROTTI_ENABLE_HTTPS=1 PAVAROTTI_PUBLIC_HOST=atlante.example.org bash server/start-service.sh
+```
+
+Then open `https://atlante.example.org:8443`. The deployment guide explains the port forwarding and security limitations.
+
+## Documentation
+
+- [Deployment, usage, and troubleshooting](server/DEPLOYMENT_AND_USAGE.md)
+- [Server operations](server/README.md)
+- [User manual — Markdown](docs/User_Manual_ATLANTE.md) · [formatted DOCX](docs/User_Manual_ATLANTE.docx)
+- [Technical report — Markdown](docs/Technical_Report_ATLANTE.md) · [formatted DOCX](docs/Technical_Report_ATLANTE.docx)
+- [Third-party software and license notes](THIRD_PARTY_NOTICES.md)
+- [Contributing guide](CONTRIBUTING.md)
+
+## Git LFS and repository contents
+
+The demo video at `server/samples/pavarotti-demo.mp4` is tracked with Git LFS because it is larger than GitHub's regular per-file limit. Install Git LFS before cloning if you need the demo endpoint and a complete checkout. Runtime `.env` files, datasets, jobs, generated outputs, caches, and compiled artifacts are excluded.

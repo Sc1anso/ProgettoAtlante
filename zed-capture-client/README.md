@@ -1,33 +1,28 @@
-# Client di acquisizione ZED
+# ZED capture client
 
-Questo client viene eseguito sul PC Windows/Linux con la camera ZED collegata;
-non va eseguito nel container del server.
+Run this client on the Windows/Linux computer connected to the ZED camera. Do not run it inside the server container.
 
-## Requisiti
+## Requirements
 
-1. Installa [ZED SDK](https://www.stereolabs.com/developers/release/) e la sua
-   binding Python `pyzed.sl` per la versione di Python in uso.
-2. Installa le dipendenze Python usate dallo script:
+1. Install the [ZED SDK](https://www.stereolabs.com/developers/release/) and the `pyzed.sl` Python binding for the Python version in use.
+2. Install the Python dependencies used by the capture script:
 
    ```bash
    pip install numpy opencv-python matplotlib
    ```
 
-## Acquisizione e upload
+## Capture and package
 
-Esegui l'acquisizione in una nuova directory:
+Start capture in a new directory:
 
 ```bash
 python capture_video.py
 ```
 
-Alla chiusura, la directory contiene `recording.mp4`, `depth_data.dp` e
-`camera_data.dp`. Crea lo ZIP portabile con:
+When capture ends, the directory contains `recording.mp4`, `depth_data.dp`, and `camera_data.dp`. Create a portable ZIP archive with:
 
 ```bash
-python make_capture_zip.py . pavarotti-zed.zip
+python make_capture_zip.py . zed-capture.zip
 ```
 
-Carica poi `pavarotti-zed.zip` nella modalità **Pacchetto ZED con profondità**
-della webapp. Non rinominare i tre file e non inserirli in una sottocartella:
-la validazione server richiede che siano nella radice dello ZIP.
+The current web UI hides the ZED upload selector. The backend compatibility route expects the three files at the ZIP root; do not rename them or place them in a subdirectory. See the deployment guide before re-enabling this input mode.

@@ -88,16 +88,19 @@ if [[ "${PAVAROTTI_ENABLE_MONITOR:-0}" == "1" ]]; then
 fi
 
 if [[ "${PAVAROTTI_ENABLE_HTTPS:-0}" == "1" ]]; then
-  url="https://${PAVAROTTI_PUBLIC_HOST}"
+  url="https://${PAVAROTTI_PUBLIC_HOST}:8443"
+  monitor_host="$PAVAROTTI_PUBLIC_HOST"
 elif $is_wsl; then
   url='http://localhost:8084'
+  monitor_host=localhost
 else
   ip="$(hostname -I | awk '{print $1}')"
   url="http://${ip}:8084"
+  monitor_host="$ip"
 fi
-echo "Pavarotti 3D is running: $url"
+echo "Project ATLANTE is running: $url"
 if [[ "${PAVAROTTI_ENABLE_MONITOR:-0}" == "1" ]]; then
-  echo "Gaussian Monitor is running: ${url%:8084}:50001/vnc.html"
+  echo "Gaussian Monitor is running: http://${monitor_host}:50001/vnc.html"
 else
   echo 'Optional Gaussian Monitor: PAVAROTTI_ENABLE_MONITOR=1 bash server/setup-service.sh'
 fi
